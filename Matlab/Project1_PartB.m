@@ -1,0 +1,319 @@
+%% ESE5310 Project 1 - Part B: Filter Bank Design
+% Student Name: [Hesham Nabil Maher]
+clear all;close all;clc;
+
+%% Part B.A) Filter Bank Design Parameters
+fs = 48000; % Sampling frequency
+N = 128; % Filter order
+edges = [0, 1/8, 2/8, 4/8, 8/8] * (fs / 2); % [0, 6k, 12k, 24k, 48k] Hz
+norm_edges = edges / (fs/2); % Normalized frequency edges (0 to 1)
+
+% Design Filters
+
+% Stage 1: Split full-band into low and high bands
+h1 = fir1(N, 0.5);               % LPF (0 - fs/2)
+h2 = (-1).^(0:N) .* h1;          % HPF (fs/2 - fs) (Quadrature Mirror)
+
+% Stage 2: Further split the low band
+h3 = fir1(N, 0.25);              % LPF (0 - fs/4)
+h4 = (-1).^(0:N) .* h3;          % HPF (fs/4 - fs/2)
+
+% Frequency Responses
+[H1, w] = freqz(h1, 1, 1024);
+[H2, ~] = freqz(h2, 1, 1024);
+[H3, ~] = freqz(h3, 1, 1024);
+[H4, ~] = freqz(h4, 1, 1024);
+w_norm = w/pi; 
+freq_Hz = w*fs/(2*pi); 
+
+colors = lines(4); % Distinct colors for each filter
+line_style = {'-', '--', ':', '-.'};
+line_width = 1.5;
+cutoff_style = '--';
+cutoff_width = 1.2;
+cutoff_colors = {[0 0.5 0], [0.8 0 0], [0 0 0.8]}; % Green, Red, Blue
+
+% Figure 1: Normalized Frequency (×π rad/sample)
+figure('Position', [100, 100, 1200, 900], 'Color', 'w', 'Name', 'Normalized Frequency Response');
+% Magnitude Responses
+subplot(2,4,3);
+plot(w_norm, abs(H2), 'Color', colors(2,:), 'LineWidth', line_width);
+hold on;
+xline(norm_edges(2), cutoff_style, 'Color', cutoff_colors{1}, 'LineWidth', cutoff_width);
+xline(norm_edges(3), cutoff_style, 'Color', cutoff_colors{2}, 'LineWidth', cutoff_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 3');
+grid on; ylim([0 1.1]);
+legend({sprintf('Lower: %.2fπ', norm_edges(2)), sprintf('Upper: %.2fπ', norm_edges(3))}, 'Location', 'southeast');
+
+subplot(2,4,1);
+plot(w_norm, abs(H1), 'Color', colors(1,:), 'LineWidth', line_width);
+hold on;
+xline(norm_edges(2), cutoff_style, 'Color', cutoff_colors{3}, 'LineWidth', cutoff_width);
+xlabel('Frequency (×π rad/sample)'); ylabel('Magnitude');
+title('Band 1');
+grid on; ylim([0 1.1]);
+legend(sprintf('Cutoff: %.2fπ', norm_edges(2)), 'Location', 'southeast');
+
+subplot(2,4,2);
+plot(w_norm, abs(H3), 'Color', colors(3,:), 'LineWidth', line_width);
+hold on;
+xline(norm_edges(3), cutoff_style, 'Color', cutoff_colors{1}, 'LineWidth', cutoff_width);
+xline(norm_edges(4), cutoff_style, 'Color', cutoff_colors{2}, 'LineWidth', cutoff_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 2');
+grid on; ylim([0 1.1]);
+legend({sprintf('Lower: %.2fπ', norm_edges(3)), sprintf('Upper: %.2fπ', norm_edges(4))}, 'Location', 'southeast');
+
+subplot(2,4,4);
+plot(w_norm, abs(H4), 'Color', colors(4,:), 'LineWidth', line_width);
+hold on;
+xline(norm_edges(4), cutoff_style, 'Color', cutoff_colors{3}, 'LineWidth', cutoff_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 4');
+grid on; ylim([0 1.1]);
+legend(sprintf('Cutoff: %.2fπ', norm_edges(4)), 'Location', 'southeast');
+
+% Phase Responses
+subplot(2,4,5);
+plot(w_norm, angle(H1), 'Color', colors(1,:), 'LineWidth', line_width);
+xlabel('Frequency (×π rad/sample)'); ylabel('Phase (rad)');
+title('Band 1 Phase'); grid on;
+subplot(2,4,6);
+plot(w_norm, angle(H2), 'Color', colors(2,:), 'LineWidth', line_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 2 Phase');
+grid on;
+subplot(2,4,7);
+plot(w_norm, angle(H3), 'Color', colors(3,:), 'LineWidth', line_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 3 Phase');
+grid on;
+subplot(2,4,8);
+plot(w_norm, angle(H4), 'Color', colors(4,:), 'LineWidth', line_width);
+xlabel('Frequency (×π rad/sample)'); title('Band 4 Phase');
+grid on;
+
+
+%% Part B.B) Test Signal Generation and Filter Bank Operation
+duration = 0.1; 
+t = 0:1/fs:duration-1/fs; % Time vector
+
+% test sinusoids
+f = [3000, 8000, 18000, 32000]; % Frequencies in each band
+A = [0.7, 0.5, 0.3, 0.2]; % Amplitudes for each band
+
+sin1 = A(1)*sin(2*pi*f(1)*t); % Band 1
+sin2 = A(2)*sin(2*pi*f(2)*t); % Band 2
+sin3 = A(3)*sin(2*pi*f(3)*t); % Band 3
+sin4 = A(4)*sin(2*pi*f(4)*t); % Band 4 (will alias)
+
+% test signal
+test_signal = sin1 + sin2 + sin3 + sin4;
+
+% Plot Test Signal
+figure('Position', [100 100 800 600], 'Name', 'Test Signal', 'Color', 'w');
+
+% Time domain plot
+subplot(2,1,1);
+plot(t, test_signal);
+xlim([0 0.01]); % Show first 10ms
+xlabel('Time (s)'); ylabel('Amplitude');
+title('Test Signal (Time Domain)');
+grid on;
+
+% Frequency domain plot
+NFFT = 2048; % Number of FFT points
+test_fft = fft(test_signal, NFFT);
+f_axis = (0:NFFT/2)*fs/NFFT; % Frequency axis
+subplot(2,1,2);
+stem(f_axis/1000, abs(test_fft(1:NFFT/2+1)), 'filled');
+xlabel('Frequency (kHz)'); ylabel('Magnitude');
+title('Test Signal Spectrum');
+xlim([0 fs/2]); 
+xticks(edges);
+xticklabels(string(edges/1000) + " kHz"); % Label in kHz
+grid on;
+
+% Apply the Filter Bank to the Test Signal
+% Stage 1: First split
+low1 = filter(h1, 1, test_signal);
+high1 = filter(h2, 1, test_signal);
+
+% Downsample to avoid redundancy
+low1_ds = downsample(low1, 2);
+high1_ds = downsample(high1, 2);
+
+% Stage 2: Further split the low band
+low2 = filter(h3, 1, low1_ds);
+mid1 = filter(h4, 1, low1_ds);
+
+% Downsample again
+low2_ds = downsample(low2, 2);
+mid1_ds = downsample(mid1, 2);
+
+% The 4 bands are:
+y1 = low2_ds;   % (1/8 of full-band)
+y2 = mid1_ds;   % (1/8 of full-band)
+y3 = high1_ds;  % (1/4 of full-band)
+y4 = high1;     % (1/2 of full-band)
+
+
+% Plot Filter Bank Outputs
+figure('Position', [100 100 1000 800], 'Name', 'Filter Bank Outputs', 'Color', 'w');
+
+% Time domain outputs
+for i = 1:4
+    subplot(4,2,2*i-1);
+    eval(['plot(t, y' num2str(i) ', ''Color'', colors(' num2str(i) ',:))']);
+    xlim([0 0.01]);
+    ylabel('Amplitude');
+    title(['Band ' num2str(i) ' Output (Time)']);
+    grid on;
+end
+xlabel('Time (s)');
+
+% Frequency domain outputs
+for i = 1:4
+    subplot(4,2,2*i);
+    y_fft = fft(eval(['y' num2str(i)]), NFFT);
+    stem(f_axis/1000, abs(y_fft(1:NFFT/2+1)), 'Color', colors(i,:), 'Marker', 'none');
+    xlim([0 fs/2 / 1000]); % Show up to 24 kHz
+    xticks(edges/1000); % Mark correct cutoff points
+    xlabel('Frequency (kHz)');
+    ylabel('Magnitude');
+    band_labels = ["0-6 kHz", "6-12 kHz", "12-24 kHz", "24+ kHz"];
+    title(['Band ' num2str(i) ': ' band_labels(i)]);
+    
+    grid on;
+end
+xlabel('Frequency (kHz)');
+
+% Perfect Reconstruction Test
+% Sum all filtered outputs
+reconstructed = y1 + y2 + y3 + y4;
+
+% Account for filter delay
+delay = N/2; % FIR filter delay
+reconstructed = reconstructed(delay+1:end);
+original = test_signal(1:end-delay);
+
+% Plot reconstruction
+figure('Position', [100 100 800 400], 'Name', 'Reconstruction', 'Color', 'w');
+
+% Time domain comparison 
+subplot(2,1,1);
+plot(t(1:length(original)), original, 'b');
+hold on;
+plot(t(1:length(reconstructed)), reconstructed, 'r--');
+xlim([0 0.01]);
+xlabel('Time (s)'); ylabel('Amplitude');
+title('Time Domain Comparison');
+legend('Original', 'Reconstructed');
+grid on;
+
+% Frequency domain comparison
+subplot(2,1,2);
+orig_fft = fft(original, NFFT);
+recon_fft = fft(reconstructed, NFFT);
+plot(f_axis/1000, 20*log10(abs(orig_fft(1:NFFT/2+1))), 'b');
+hold on;
+plot(f_axis/1000, 20*log10(abs(recon_fft(1:NFFT/2+1))), 'r--');
+xlabel('Frequency (kHz)'); ylabel('Magnitude (dB)');
+title('Frequency Domain Comparison');
+xlim([0 fs/2 / 1000]); ylim([-60 0]); % Match correct Nyquist limit
+xticks(edges/1000);
+xlabel('Frequency (kHz)');
+grid on;
+
+%% Part C: Equalizer Implementation
+
+duration = 2; 
+fs = 48000; 
+t = 0:1/fs:duration-1/fs;
+audio_signal = chirp(t, 100, duration, fs/2*0.9) + 0.5*randn(size(t)); % Sweep + noise
+
+% Apply the FIR filters to decompose the audio signal into bands
+a1 = filter(h1, 1, audio_signal); % Band 1 (0-6 kHz)
+a2 = filter(h2, 1, audio_signal); % Band 2 (6-12 kHz)
+a3 = filter(h3, 1, audio_signal); % Band 3 (12-24 kHz)
+a4 = filter(h4, 1, audio_signal); % Band 4 (24-48 kHz, may alias)
+
+% Define updated equalizer presets
+presets = struct(...
+    'Flat', [1.0, 1.0, 1.0, 1.0], ...       % No change (reference)
+    'BassBoost', [2.5, 1.0, 0.8, 0.7], ... % Stronger bass emphasis
+    'TrebleBoost', [0.8, 0.9, 1.8, 2.2], ... % More pronounced treble gain
+    'VShape', [2.0, 0.9, 0.9, 2.0], ...     % Boost lows and highs
+    'MidBoost', [0.8, 2.0, 1.5, 0.8]);      % Focus on mid frequencies
+
+% Apply equalization and reconstruct
+equalized_signals = struct();
+preset_names = fieldnames(presets);
+for i = 1:length(preset_names)
+    gains = presets.(preset_names{i});
+    e1 = a1 * gains(1);
+    e2 = a2 * gains(2);
+    e3 = a3 * gains(3);
+    e4 = a4 * gains(4);
+    delay = N/2; 
+    equalized = e1 + e2 + e3 + e4;
+    equalized_signals.(preset_names{i}) = equalized(delay+1:end);
+end
+
+% Original signal with delay compensation
+original = audio_signal(1:end-delay);
+t_plot = t(1:length(original));
+
+% Time-Domain Plot: Equalizer Results
+figure('Position', [100 100 1000 800], 'Name', 'Equalizer: Time Domain', 'Color', 'w');
+
+% Original signal plot
+subplot(length(preset_names)+1, 1, 1);
+plot(t_plot, original);
+title('Original Signal');
+xlim([0 0.1]); % Show first 100ms
+ylabel('Amplitude');
+grid on;
+
+% Equalized signals in time domain
+for i = 1:length(preset_names)
+    subplot(length(preset_names)+1, 1, i+1);
+    plot(t_plot, equalized_signals.(preset_names{i}));
+    title([preset_names{i} ' Equalization']);
+    xlim([0 0.1]);
+    ylabel('Amplitude');
+    grid on;
+end
+xlabel('Time (s)');
+
+% Frequency-Domain Plot: Equalizer Results
+NFFT = 4096;
+f_axis = (0:NFFT/2)*fs/NFFT;
+figure('Position', [100 100 1000 800], 'Name', 'Equalizer: Frequency Domain', 'Color', 'w');
+
+% Original spectrum plot
+orig_fft = fft(original, NFFT);
+subplot(length(preset_names)+1, 1, 1);
+semilogx(f_axis, 20*log10(abs(orig_fft(1:NFFT/2+1))));
+title('Original Spectrum');
+xlim([20 fs/2]);
+ylabel('Magnitude (dB)');
+grid on;
+
+% Equalized spectra plots
+for i = 1:length(preset_names)
+    eq_fft = fft(equalized_signals.(preset_names{i}), NFFT);
+    subplot(length(preset_names)+1, 1, i+1);
+    semilogx(f_axis, 20*log10(abs(eq_fft(1:NFFT/2+1))));
+    title([preset_names{i} ' Spectrum']);
+    xlim([20 fs/2]);
+    ylabel('Magnitude (dB)');
+    grid on;
+end
+xlabel('Frequency (Hz)');
+
+% Audio Playback
+% Uncomment to hear the results
+% soundsc(original, fs); 
+% pause(duration+0.5);
+% for i = 1:length(preset_names)
+%     disp(['Playing: ' preset_names{i}]);
+%     soundsc(equalized_signals.(preset_names{i}), fs);
+%     pause(duration+0.5);
+% end

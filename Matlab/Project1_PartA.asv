@@ -1,0 +1,625 @@
+%% ESE5310 Project 1 - Part A: FIR Filter Design
+% Student Name: [Hesham Nabil Maher]
+clear all;close all;clc;
+
+%% 1. Part A(a)(i): FIR Filter Design by Truncation (N=21 and N=101) - Centered Version
+
+% parameters
+wc = 2.0; % Cutoff frequency
+N1 = 21;  % First filter size (must be odd)
+N2 = 101; % Second filter size (must be odd)
+
+% Design both filters (centered)
+h21 = LPFtrunc(N1, wc);
+h101 = LPFtrunc(N2, wc);
+
+% DTFTs
+[X21, w] = DTFT(h21, 512);
+[X101, w] = DTFT(h101, 512);
+
+% Magnitude Response Plots 
+figure('Position', [100, 100, 1200, 900]);
+
+% Common parameters
+wp = 1.9; % Passband edge
+ws = 2.1; % Stopband edge
+wc = 2.0; % Cutoff frequency
+
+% =============================================
+% N=21 Filter - Linear Scale
+% =============================================
+
+subplot(2,2,1);
+plot(w, abs(X21)/max(abs(X21)), 'LineWidth', 2);
+hold on;
+patch([-wp wp wp -wp], [0 0 1.1 1.1], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % Passband
+patch([-ws -wp -wp -ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % Left Transition
+patch([ws wp wp ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % Right Transition
+patch([-pi -ws -ws -pi], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % Left Stopband
+patch([ws pi pi ws], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none'); % Right Stopband
+line([-wc -wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+line([wc wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+text(0, 1.05, 'Passband (|ω|≤1.9)', 'HorizontalAlignment', 'center');
+text(wc, 0.5, sprintf('Transition Band\n1.9<|ω|<2.1'), 'HorizontalAlignment', 'center');
+text(pi/2, 0.1, 'Stopband (|ω|≥2.1)', 'HorizontalAlignment', 'center');
+title('N=21: Normalized Magnitude Response (Linear)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude');
+grid on; xlim([-pi pi]); ylim([0 1.1]);
+
+% =============================================
+% N=101 Filter - Linear Scale
+% =============================================
+
+subplot(2,2,2);
+plot(w, abs(X101)/max(abs(X101)), 'LineWidth', 2);
+hold on;
+patch([-wp wp wp -wp], [0 0 1.1 1.1], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-ws -wp -wp -ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws wp wp ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-pi -ws -ws -pi], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws pi pi ws], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+line([-wc -wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+line([wc wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+text(0, 1.05, 'Passband (|ω|≤1.9)', 'HorizontalAlignment', 'center');
+text(wc, 0.5, sprintf('Transition Band\n1.9<|ω|<2.1'), 'HorizontalAlignment', 'center');
+text(pi/2, 0.1, 'Stopband (|ω|≥2.1)', 'HorizontalAlignment', 'center');
+title('N=101: Normalized Magnitude Response (Linear)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude');
+grid on; xlim([-pi pi]); ylim([0 1.1]);
+
+% =============================================
+% N=21 Filter - dB Scale
+% =============================================
+
+subplot(2,2,3);
+dB21 = 20*log10(abs(X21)/max(abs(X21)));
+plot(w, dB21, 'LineWidth', 2);
+hold on;
+pb_max = max(dB21(abs(w)<=wp));
+pb_min = min(dB21(abs(w)<=wp));
+sb_max = max(dB21(abs(w)>=ws));
+line([-wp wp], [pb_max pb_max], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-wp wp], [pb_min pb_min], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-pi -ws], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+line([ws pi], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+text(0, pb_max+1, sprintf('Max PB: %.1f dB', pb_max), 'HorizontalAlignment', 'center');
+text(0, pb_min-1, sprintf('Min PB: %.1f dB', pb_min), 'HorizontalAlignment', 'center');
+text(pi*0.75, sb_max+3, sprintf('Max SB: %.1f dB', sb_max), 'HorizontalAlignment', 'center');
+title('N=21: Magnitude Response (dB)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude (dB)');
+grid on; xlim([-pi pi]); ylim([-80 5]);
+
+% =============================================
+% N=101 Filter - dB Scale
+% =============================================
+
+subplot(2,2,4);
+dB101 = 20*log10(abs(X101)/max(abs(X101)));
+plot(w, dB101, 'LineWidth', 2);
+hold on;
+pb_max = max(dB101(abs(w)<=wp));
+pb_min = min(dB101(abs(w)<=wp));
+sb_max = max(dB101(abs(w)>=ws));
+line([-wp wp], [pb_max pb_max], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-wp wp], [pb_min pb_min], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-pi -ws], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+line([ws pi], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+text(0, pb_max+1, sprintf('Max PB: %.1f dB', pb_max), 'HorizontalAlignment', 'center');
+text(0, pb_min-1, sprintf('Min PB: %.1f dB', pb_min), 'HorizontalAlignment', 'center');
+text(pi*0.75, sb_max+3, sprintf('Max SB: %.1f dB', sb_max), 'HorizontalAlignment', 'center');
+title('N=101: Magnitude Response (dB)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude (dB)');
+grid on; xlim([-pi pi]); ylim([-80 5]);
+
+% Impulse Response Comparison
+
+figure('Position', [100, 100, 1200, 400]);
+% N=21 impulse response
+subplot(1,2,1);
+stem(-(N1-1)/2:(N1-1)/2, h21, 'filled', 'LineWidth', 1.5);
+title('Impulse Response (N=21)', 'FontSize', 12);
+xlabel('Sample Index', 'FontSize', 10);
+ylabel('Amplitude', 'FontSize', 10);
+grid on;
+xlim([-(N1-1)/2-1 (N1-1)/2+1]);
+
+% N=101 impulse response
+subplot(1,2,2);
+stem(-(N2-1)/2:(N2-1)/2, h101, 'filled', 'LineWidth', 1.5);
+title('Impulse Response (N=101)', 'FontSize', 12);
+xlabel('Sample Index', 'FontSize', 10);
+ylabel('Amplitude', 'FontSize', 10);
+grid on;
+xlim([-(N2-1)/2-1 (N2-1)/2+1]);
+
+
+%% 1. Part A(a)(ii): Windowed FIR Filters (N=21 with Blackman and Hamming) 
+
+% Windowed FIR Filter Analysis
+% Parameters
+wc = 2.0; % Cutoff frequency
+N = 21;  % Filter length
+M = (N-1)/2;
+wp = 1.9; % Passband edge
+ws = 2.1; % Stopband edge
+
+% Design filters
+n = -M:M;
+h_rect = (wc/pi) * sinc(wc/pi * n);
+blackman_win = blackman(N)';
+hamming_win = hamming(N)';
+h_black = h_rect .* blackman_win;
+h_hamm = h_rect .* hamming_win;
+
+% Frequency analysis
+NFFT = 1024;
+X_black = fftshift(fft(h_black, NFFT));
+X_hamm = fftshift(fft(h_hamm, NFFT));
+w = linspace(-pi, pi, NFFT);
+
+% Magnitude Response Comparison
+figure('Position', [100, 100, 1200, 900]);
+
+% Blackman - Linear Scale
+subplot(2,2,1);
+plot(w, abs(X_black)/max(abs(X_black)), 'LineWidth', 2);
+hold on;
+patch([-wp wp wp -wp], [0 0 1.1 1.1], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-ws -wp -wp -ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws wp wp ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-pi -ws -ws -pi], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws pi pi ws], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+line([-wc -wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+line([wc wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+text(0, 1.05, 'Passband', 'HorizontalAlignment', 'center');
+text(wc, 0.5, 'Transition', 'HorizontalAlignment', 'center', 'Rotation', 90);
+text(pi/2, 0.1, 'Stopband', 'HorizontalAlignment', 'center');
+title('Blackman: Normalized Magnitude (Linear)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude');
+grid on; xlim([-pi pi]); ylim([0 1.1]);
+
+% Hamming - Linear Scale
+subplot(2,2,2);
+plot(w, abs(X_hamm)/max(abs(X_hamm)), 'LineWidth', 2);
+hold on;
+patch([-wp wp wp -wp], [0 0 1.1 1.1], 'g', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-ws -wp -wp -ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws wp wp ws], [0 0 1.1 1.1], 'm', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([-pi -ws -ws -pi], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+patch([ws pi pi ws], [0 0 1.1 1.1], 'r', 'FaceAlpha', 0.1, 'EdgeColor', 'none');
+line([-wc -wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+line([wc wc], ylim, 'Color', 'k', 'LineStyle', '--', 'LineWidth', 1.5);
+text(0, 1.05, 'Passband', 'HorizontalAlignment', 'center');
+text(wc, 0.5, 'Transition', 'HorizontalAlignment', 'center', 'Rotation', 90);
+text(pi/2, 0.1, 'Stopband', 'HorizontalAlignment', 'center');
+title('Hamming: Normalized Magnitude (Linear)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude');
+grid on; xlim([-pi pi]); ylim([0 1.1]);
+
+% Blackman - dB Scale
+subplot(2,2,3);
+dB_black = 20*log10(abs(X_black)/max(abs(X_black)));
+plot(w, dB_black, 'LineWidth', 2);
+hold on;
+in_pb = (abs(w) <= wp);
+pb_max = max(dB_black(in_pb));
+pb_min = min(dB_black(in_pb));
+in_sb = (abs(w) >= ws);
+sb_max = max(dB_black(in_sb));
+line([-wp wp], [pb_max pb_max], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-wp wp], [pb_min pb_min], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-pi -ws], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+line([ws pi], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+text(0, pb_max+2, sprintf('Max: %.1f dB', pb_max), 'HorizontalAlignment', 'center');
+text(0, pb_min-2, sprintf('Min: %.1f dB', pb_min), 'HorizontalAlignment', 'center');
+text(pi*0.75, sb_max+5, sprintf('Max SB: %.1f dB', sb_max), 'HorizontalAlignment', 'center');
+title('Blackman: Magnitude Response (dB)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude (dB)');
+grid on; xlim([-pi pi]); ylim([-100 5]);
+
+% Hamming - dB Scale
+subplot(2,2,4);
+dB_hamm = 20*log10(abs(X_hamm)/max(abs(X_hamm)));
+plot(w, dB_hamm, 'LineWidth', 2);
+hold on;
+in_pb = (abs(w) <= wp);
+pb_max = max(dB_hamm(in_pb));
+pb_min = min(dB_hamm(in_pb));
+in_sb = (abs(w) >= ws);
+sb_max = max(dB_hamm(in_sb));
+line([-wp wp], [pb_max pb_max], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-wp wp], [pb_min pb_min], 'Color', 'r', 'LineStyle', ':', 'LineWidth', 1.5);
+line([-pi -ws], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+line([ws pi], [sb_max sb_max], 'Color', 'b', 'LineStyle', ':', 'LineWidth', 1.5);
+text(0, pb_max+2, sprintf('Max: %.1f dB', pb_max), 'HorizontalAlignment', 'center');
+text(0, pb_min-2, sprintf('Min: %.1f dB', pb_min), 'HorizontalAlignment', 'center');
+text(pi*0.75, sb_max+5, sprintf('Max SB: %.1f dB', sb_max), 'HorizontalAlignment', 'center');
+title('Hamming: Magnitude Response (dB)');
+xlabel('Frequency (rad/sample)'); ylabel('Magnitude (dB)');
+grid on; xlim([-pi pi]); ylim([-100 5]);
+
+% Impulse Responses
+
+figure('Position', [100, 100, 1200, 400]);
+% Blackman impulse
+subplot(1,2,1);
+stem(-M:M, h_black, 'filled', 'LineWidth', 1.5, 'MarkerSize', 6);
+title('Blackman Windowed Impulse Response');
+xlabel('Sample Index'); ylabel('Amplitude');
+grid on; xlim([-M-1 M+1]);
+
+% Hamming impulse
+subplot(1,2,2);
+stem(-M:M, h_hamm, 'filled', 'LineWidth', 1.5, 'MarkerSize', 6);
+title('Hamming Windowed Impulse Response');
+xlabel('Sample Index'); ylabel('Amplitude');
+grid on; xlim([-M-1 M+1]);
+%% 1. Part A(a)(iii): Complete Analysis with 9 Plots
+% Parameters
+wc = 2.0; % Cutoff 
+fs = 8192; 
+Nfft = 2048; 
+load('nspeech2.mat');
+speech = nspeech2 / max(abs(nspeech2));
+
+% Apply filters
+filtered_21 = conv(speech, h21, 'same');
+filtered_101 = conv(speech, h101, 'same');
+filtered_21 = 2 * filtered_21; 
+filtered_101 = 2 * filtered_101;
+
+% Frequency vectors
+f_Hz = (0:Nfft/2-1)*(fs/Nfft); 
+omega = linspace(-pi, pi, Nfft); 
+
+% Compute spectra
+S_orig = abs(fft(speech, Nfft));
+S_21 = abs(fft(filtered_21, Nfft));
+S_101 = abs(fft(filtered_101, Nfft));
+
+figure('Position', [100, 100, 1400, 1200], 'Color', 'w');
+subplot(3,3,1);
+plot(0:length(speech)-1, speech, 'LineWidth', 1);
+title('Original Signal (Time Domain)', 'FontSize', 12);
+xlabel('Sample Index', 'FontSize', 10);
+ylabel('Amplitude', 'FontSize', 10);
+xlim([0 1000]); 
+grid on;
+subplot(3,3,2);
+plot((0:length(filtered_21)-1), filtered_21, 'LineWidth', 1);
+title('N=21 Filtered (Time Domain)', 'FontSize', 12);
+xlabel('Sample Index', 'FontSize', 10);
+ylabel('Amplitude', 'FontSize', 10);
+xlim([0 1000]);
+grid on;
+subplot(3,3,3);
+plot((0:length(filtered_101)-1), filtered_101, 'LineWidth', 1);
+title('N=101 Filtered (Time Domain)', 'FontSize', 12);
+xlabel('Sample Index', 'FontSize', 10);
+ylabel('Amplitude', 'FontSize', 10);
+xlim([0 1000]);
+grid on;
+
+% Frequency Domain (Hz) - dB Scale
+subplot(3,3,4);
+plot(f_Hz, 20*log10(S_orig(1:Nfft/2)), 'LineWidth', 1.5);
+title('Original Spectrum (Hz)', 'FontSize', 12);
+xlabel('Frequency (Hz)', 'FontSize', 10);
+ylabel('Magnitude (dB)', 'FontSize', 10);
+xlim([0 4000]); 
+grid on;
+subplot(3,3,5);
+plot(f_Hz, 20*log10(S_21(1:Nfft/2)), 'LineWidth', 1.5);
+title('N=21 Filtered (Hz)', 'FontSize', 12);
+xlabel('Frequency (Hz)', 'FontSize', 10);
+ylabel('Magnitude (dB)', 'FontSize', 10);
+xlim([0 4000]);
+grid on;
+subplot(3,3,6);
+plot(f_Hz, 20*log10(S_101(1:Nfft/2)), 'LineWidth', 1.5);
+title('N=101 Filtered (Hz)', 'FontSize', 12);
+xlabel('Frequency (Hz)', 'FontSize', 10);
+ylabel('Magnitude (dB)', 'FontSize', 10);
+xlim([0 4000]);
+grid on;
+
+% Frequency Domain (rad/sample) - Linear Scale
+subplot(3,3,7);
+plot(omega, fftshift(S_orig)/length(speech), 'LineWidth', 1.5);
+title('Original Spectrum (rad/sample)', 'FontSize', 12);
+xlabel('ω (rad/sample)', 'FontSize', 10);
+ylabel('Magnitude', 'FontSize', 10);
+xlim([-pi pi]);
+xticks([-pi -wc 0 wc pi]);
+xticklabels({'-\pi','-ω_c','0','ω_c','\pi'});
+grid on;
+subplot(3,3,8);
+plot(omega, fftshift(S_21)/length(filtered_21), 'LineWidth', 1.5);
+hold on;
+plot([-wc -wc], ylim, 'r--', 'LineWidth', 1.5);
+plot([wc wc], ylim, 'r--', 'LineWidth', 1.5);
+title('N=21 Filtered (rad/sample)', 'FontSize', 12);
+xlabel('ω (rad/sample)', 'FontSize', 10);
+ylabel('Magnitude', 'FontSize', 10);
+xlim([-pi pi]);
+xticks([-pi -wc 0 wc pi]);
+xticklabels({'-\pi','-ω_c','0','ω_c','\pi'});
+grid on;
+subplot(3,3,9);
+plot(omega, fftshift(S_101)/length(filtered_101), 'LineWidth', 1.5);
+hold on;
+plot([-wc -wc], ylim, 'r--', 'LineWidth', 1.5);
+plot([wc wc], ylim, 'r--', 'LineWidth', 1.5);
+title('N=101 Filtered (rad/sample)', 'FontSize', 12);
+xlabel('ω (rad/sample)', 'FontSize', 10);
+ylabel('Magnitude', 'FontSize', 10);
+xlim([-pi pi]);
+xticks([-pi -wc 0 wc pi]);
+xticklabels({'-\pi','-ω_c','0','ω_c','\pi'});
+grid on;
+
+filtered_speech_21 = conv(speech, 2 * h21, 'same');
+filtered_speech_101 = conv(speech, 2 * h101, 'same');
+
+disp('Playing original speech signal...');
+soundsc(speech, fs);
+pause(length(speech)/fs + 1);
+
+disp('Playing N=21 Filtered speech...');
+soundsc(filtered_speech_21, fs);
+pause(length(filtered_speech_21)/fs + 1);
+
+disp('Playing N=101 Filtered speech...');
+soundsc(filtered_speech_101, fs);
+pause(length(filtered_speech_101)/fs + 1);
+
+
+
+%% 1. Part A(b): FIR Filter Design using firpmord and firpm 
+wp = 1.9;       % Passband edge frequency (rad/s)
+ws = 2.1;       % Stopband edge frequency (rad/s)
+delta_p = 0.02; % Passband ripple
+delta_s = 0.005; % Stopband ripple
+
+wp_norm = wp/pi;
+ws_norm = ws/pi;
+
+% Estimate initial order using firpmord
+[N_est, fo, ao, wts] = firpmord([wp_norm, ws_norm], [1 0], [delta_p, delta_s]);
+
+% find minimum order meeting specs
+for N = N_est:N_est+20
+    b = firpm(N, fo, ao, wts);
+    [H,w] = freqz(b, 1, 512); 
+    passband = (w <= wp);
+    stopband = (w >= ws);
+    H_mag = abs(H);
+    pb_ripple = max(H_mag(passband)) - min(H_mag(passband));
+    sb_atten = -20*log10(max(H_mag(stopband)));
+    if (pb_ripple <= delta_p) && (sb_atten >= -20*log10(delta_s))
+        break;
+    end
+end
+
+%verification
+fprintf('=== Filter Design Results ===\n');
+fprintf('Estimated order (firpmord): %d\n', N_est);
+fprintf('Final required order: %d\n', N);
+fprintf('Passband ripple: %.4f (spec: ≤ %.4f)\n', pb_ripple, delta_p);
+fprintf('Stopband attenuation: %.2f dB (spec: ≥ %.2f dB)\n', ...
+        sb_atten, -20*log10(delta_s));
+
+% Magnitude response in dB
+figure;
+plot(w/pi, 20*log10(abs(H)));
+hold on;
+xline(wp/pi, '--r', 'Passband edge (1.9 rad/s)');
+xline(ws/pi, '--g', 'Stopband edge (2.1 rad/s)');
+title(sprintf('Parks-McClellan FIR Filter (Order %d)', N));
+xlabel('Normalized Frequency (\timesπ rad/sample)');
+ylabel('Magnitude (dB)');
+legend('Frequency Response', 'Location', 'SouthWest');
+grid on;
+
+%% 1. Part (C): Low-pass Filter Design for Speech Denoising
+
+load('projIA.mat'); 
+fs = 44100; 
+noisy = noisy / max(abs(noisy));
+
+% Design specifications
+fpass = 2500; % Passband edge (Hz)
+fstop = 4000; % Stopband edge (Hz)
+wp = 2*pi*fpass/fs; % Passband edge (rad/sample)
+ws = 2*pi*fstop/fs; % Stopband edge (rad/sample)
+
+% Convert dB specifications to linear
+G_pbmax = 40;  % dB → 1 + δ = 10^(40/20) = 100
+G_pbmin = 37;  % dB → 1 - δ = 10^(37/20) ≈ 70.79
+G_sbmax = -55; % dB → ξ = 10^(-55/20) ≈ 1.78e-3
+
+% Calculate δ and ξ
+delta = (10^(G_pbmax/20) - 10^(G_pbmin/20)) / (10^(G_pbmax/20) + 10^(G_pbmin/20));
+xi = 10^(G_sbmax/20);
+wp_norm = wp/pi;
+ws_norm = ws/pi;
+
+%% 1. Butterworth Filter Design
+fprintf('\n=== Butterworth Filter ===\n');
+[N_butter, Wn_butter] = buttord(wp_norm, ws_norm, G_pbmax-G_pbmin, -G_sbmax);
+
+% design
+[b_butter, a_butter] = butter(N_butter, Wn_butter);
+
+% Verify specs
+
+[H_butter, w] = freqz(b_butter, a_butter, 1024, fs); % freqz uses fs for Hz response
+H_butter_dB = 20 * log10(abs(H_butter));
+
+passband = (w <= wp);
+stopband = (w >= ws);
+pb_ripple_butter = max(H_butter_dB(passband)) - min(H_butter_dB(passband));
+sb_atten_butter = -max(H_butter_dB(stopband));
+
+fprintf('Initial Order: %d\n', N_butter);
+fprintf('Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_butter, G_pbmax-G_pbmin);
+fprintf('Stopband attenuation: %.2f dB (spec: > %.2f dB)\n', sb_atten_butter, -G_sbmax);
+
+% Apply filter
+filtered_butter = filter(b_butter, a_butter, noisy);
+
+plot_filter_analysis(b_butter, a_butter, wp, ws, fs, noisy, 'Butterworth', N_butter);
+
+% Play original audio then filtered (uncomment to enable)
+  disp('Playing original noisy signal...');
+  soundsc(noisy, fs);
+  pause(length(noisy)/fs + 1);
+  disp('Playing Butterworth filtered signal...');
+  soundsc(filtered_butter, fs);
+
+
+% Plot frequency response
+figure;
+plot(w, H_butter_dB, 'LineWidth', 1.5);
+title('Butterworth Filter Frequency Response', 'FontSize', 12);
+xlabel('Frequency (Hz)', 'FontSize', 10);
+ylabel('Magnitude (dB)', 'FontSize', 10);
+grid on;
+xlim([0 fs/4]); % Limit the x-axis to Nyquist frequency
+ylim([-40 5]);  % Adjust y-axis for better visibility
+
+
+%% 2. Chebyshev Type I Filter Design
+fprintf('\n=== Chebyshev Type I Filter ===\n');
+[N_cheby1, Wn_cheby1] = cheb1ord(wp_norm, ws_norm, G_pbmax-G_pbmin, -G_sbmax);
+
+% design
+% N_cheby1 = N_cheby1 - 1;
+[b_cheby1, a_cheby1] = cheby1(N_cheby1, G_pbmax-G_pbmin, Wn_cheby1);
+
+% Verify specs
+[H_cheby1, w] = freqz(b_cheby1, a_cheby1, 512);
+H_cheby1_dB = 20*log10(abs(H_cheby1));
+pb_ripple_cheby1 = max(H_cheby1_dB(passband)) - min(H_cheby1_dB(passband));
+sb_atten_cheby1 = -max(H_cheby1_dB(stopband));
+
+fprintf('Order: %d\n', N_cheby1);
+fprintf('Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_cheby1, G_pbmax-G_pbmin);
+fprintf('Stopband attenuation: %.2f dB (spec: > %.2f dB)\n', sb_atten_cheby1, -G_sbmax);
+
+% Apply Filter
+filtered_cheby1 = filter(b_cheby1, a_cheby1, noisy);
+
+plot_filter_analysis(b_cheby1, a_cheby1, wp, ws, fs, noisy, 'Chebyshev I', N_cheby1);
+
+figure;
+plot(w, H_cheby1, 'LineWidth', 1.5);
+title('Butterworth Filter Frequency Response', 'FontSize', 12);
+xlabel('Frequency (Hz)', 'FontSize', 10);
+ylabel('Magnitude (dB)', 'FontSize', 10);
+grid on;
+xlim([0 fs/4]); % Limit the x-axis to Nyquist frequency
+ylim([-40 5]);  % Adjust y-axis for better visibility
+
+% Play audio (uncomment to listen)
+disp('Playing original noisy signal...');
+soundsc(noisy, fs);
+pause(length(noisy)/fs + 1);
+disp('Playing Chebyshev I filtered signal...');
+soundsc(filtered_cheby1, fs);
+
+
+%% 3. Chebyshev Type II Filter Design
+fprintf('\n=== Chebyshev Type II Filter ===\n');
+[N_cheby2, Wn_cheby2] = cheb2ord(wp_norm, ws_norm, G_pbmax-G_pbmin, -G_sbmax);
+
+% design
+[b_cheby2, a_cheby2] = cheby2(N_cheby2, -G_sbmax, Wn_cheby2);
+
+% Verify specs
+[H_cheby2, w] = freqz(b_cheby2, a_cheby2, 512);
+H_cheby2_dB = 20*log10(abs(H_cheby2));
+pb_ripple_cheby2 = max(H_cheby2_dB(passband)) - min(H_cheby2_dB(passband));
+sb_atten_cheby2 = -max(H_cheby2_dB(stopband));
+
+fprintf('Initial Order: %d\n', N_cheby2);
+fprintf('Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_cheby2, G_pbmax-G_pbmin);
+fprintf('Stopband attenuation: %.2f dB (spec: > %.2f dB)\n', sb_atten_cheby2, -G_sbmax);
+
+% Apply Filter
+filtered_cheby2 = filter(b_cheby2, a_cheby2, noisy);
+plot_filter_analysis(b_cheby2, a_cheby2, wp, ws, fs, noisy, 'Chebyshev II', N_cheby2);
+
+% Play audio (uncomment to listen)
+% disp('Playing original noisy signal...');
+% soundsc(noisy, fs);
+% pause(length(noisy)/fs + 1);
+% disp('Playing Chebyshev II filtered signal...');
+ soundsc(filtered_cheby2, fs);
+
+%% Final Comparison Plot - All Filters 
+
+figure('Position', [100, 100, 1200, 800], 'Color', 'white');
+
+% Frequency Response Comparison (dB scale)
+subplot(2,2,[1 3]);
+plot(w/pi, H_butter_dB, 'LineWidth', 2, 'Color', [0 0.4470 0.7410]); hold on;
+plot(w/pi, H_cheby1_dB, 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980]);
+plot(w/pi, H_cheby2_dB, 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250]);
+xline(wp/pi, '--', 'Passband Edge', 'LabelVerticalAlignment', 'middle', 'LineWidth', 1.5);
+xline(ws/pi, '--', 'Stopband Edge', 'LabelVerticalAlignment', 'middle', 'LineWidth', 1.5);
+title('Frequency Response Comparison', 'FontSize', 14);
+xlabel('Normalized Frequency (\times\pi rad/sample)', 'FontSize', 12);
+ylabel('Magnitude (dB)', 'FontSize', 12);
+legend(sprintf('Butterworth (N=%d)', N_butter), ...
+       sprintf('Chebyshev I (N=%d)', N_cheby1), ...
+       sprintf('Chebyshev II (N=%d)', N_cheby2), ...
+       'Location', 'southwest');
+grid on;
+ylim([-100 5]);
+set(gca, 'FontSize', 11);
+
+% Passband Ripple Detail (Linear scale)
+subplot(2,2,2);
+plot(w/pi, abs(H_butter), 'LineWidth', 2, 'Color', [0 0.4470 0.7410]); hold on;
+plot(w/pi, abs(H_cheby1), 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980]);
+plot(w/pi, abs(H_cheby2), 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250]);
+xlim([0 wp/pi*1.1]);
+title('Passband Ripple Detail', 'FontSize', 14);
+xlabel('Normalized Frequency (\times\pi rad/sample)', 'FontSize', 12);
+ylabel('Magnitude (Linear)', 'FontSize', 12);
+grid on;
+set(gca, 'FontSize', 11);
+
+% Group Delay Comparison
+subplot(2,2,4);
+[gd_butter, w_gd] = grpdelay(b_butter, a_butter, 1024);
+[gd_cheby1, ~] = grpdelay(b_cheby1, a_cheby1, 1024);
+[gd_cheby2, ~] = grpdelay(b_cheby2, a_cheby2, 1024);
+plot(w_gd/pi, gd_butter, 'LineWidth', 2, 'Color', [0 0.4470 0.7410]); hold on;
+plot(w_gd/pi, gd_cheby1, 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980]);
+plot(w_gd/pi, gd_cheby2, 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250]);
+title('Group Delay Comparison', 'FontSize', 14);
+xlabel('Normalized Frequency (\times\pi rad/sample)', 'FontSize', 12);
+ylabel('Delay (Samples)', 'FontSize', 12);
+grid on;
+set(gca, 'FontSize', 11);
+
+%key metrics
+fprintf('\n=== Filter Performance Metrics ===\n');
+fprintf('Butterworth (N=%d):\n', N_butter);
+fprintf('  Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_butter, G_pbmax-G_pbmin);
+fprintf('  Stopband attenuation: %.2f dB (spec: > %.2f dB)\n\n', sb_atten_butter, -G_sbmax);
+
+fprintf('Chebyshev Type I (N=%d):\n', N_cheby1);
+fprintf('  Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_cheby1, G_pbmax-G_pbmin);
+fprintf('  Stopband attenuation: %.2f dB (spec: > %.2f dB)\n\n', sb_atten_cheby1, -G_sbmax);
+
+fprintf('Chebyshev Type II (N=%d):\n', N_cheby2);
+fprintf('  Passband ripple: %.2f dB (spec: < %.2f dB)\n', pb_ripple_cheby2, G_pbmax-G_pbmin);
+fprintf('  Stopband attenuation: %.2f dB (spec: > %.2f dB)\n\n', sb_atten_cheby2, -G_sbmax);
+
+fprintf('Multiplication Operations per Sample:\n');
+fprintf('  Butterworth: %d \n', 2*N_butter+1);
+fprintf('  Chebyshev I: %d \n', 2*N_cheby1+1);
+fprintf('  Chebyshev II: %d \n', 2*N_cheby2+1);
